@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from 'react-leaflet';
+import React, { useState } from 'react';
+import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,9 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import BadgeRisque from './BadgeRisque';
 import { Employeur } from '@/types';
 import { secteurs, regions } from '@/data/mockData';
-import { MapPin, Layers, Filter } from 'lucide-react';
+import { MapPin, Layers } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import { Icon } from 'leaflet';
+
+const ALL = 'all';
 
 // Fix pour les icônes Leaflet
 delete (Icon.Default.prototype as any)._getIconUrl;
@@ -25,34 +27,33 @@ interface CarteRisqueProps {
 }
 
 const CarteRisque: React.FC<CarteRisqueProps> = ({ employeurs, className = '' }) => {
-  const [filtreRegion, setFiltreRegion] = useState<string>('');
-  const [filtreSecteur, setFiltreSecteur] = useState<string>('');
-  const [filtreRisque, setFiltreRisque] = useState<string>('');
+  // IMPORTANT : undefined = pas de filtre (jamais de string vide)
+  const [filtreRegion, setFiltreRegion] = useState<string | undefined>(undefined);
+  const [filtreSecteur, setFiltreSecteur] = useState<string | undefined>(undefined);
+  const [filtreRisque, setFiltreRisque] = useState<string | undefined>(undefined);
   const [showLegend, setShowLegend] = useState(true);
 
   // Position par défaut: Abidjan
-  const position: [number, number] = [5.3600, -4.0083];
+  const position: [number, number] = [5.36, -4.0083];
 
   // Filtrer les employeurs
-  const employeursFiltres = employeurs.filter(emp => {
+  const employeursFiltres = employeurs.filter((emp) => {
     const regionMatch = !filtreRegion || emp.region === filtreRegion;
     const secteurMatch = !filtreSecteur || emp.secteur === filtreSecteur;
     const risqueMatch = !filtreRisque || emp.niveauRisque === filtreRisque;
     return regionMatch && secteurMatch && risqueMatch;
   });
 
-  // Fonction pour obtenir la couleur selon le niveau de risque
   const getRiskColor = (niveau: string) => {
     switch (niveau) {
-      case 'Faible': return '#22c55e';   // vert
-      case 'Moyen': return '#f59e0b';    // orange
-      case 'Élevé': return '#f97316';    // orange foncé
-      case 'Critique': return '#ef4444'; // rouge
-      default: return '#6b7280';         // gris
+      case 'Faible': return '#22c55e';
+      case 'Moyen': return '#f59e0b';
+      case 'Élevé': return '#f97316';
+      case 'Critique': return '#ef4444';
+      default: return '#6b7280';
     }
   };
 
-  // Statistiques pour la légende
   const stats = {
     total: employeursFiltres.length,
     faible: employeursFiltres.filter(e => e.niveauRisque === 'Faible').length,
@@ -74,48 +75,64 @@ const CarteRisque: React.FC<CarteRisqueProps> = ({ employeurs, className = '' })
           </Badge>
         </CardTitle>
       </CardHeader>
+
       <CardContent className="space-y-4">
         {/* Filtres */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <Select value={filtreRegion} onValueChange={setFiltreRegion}>
+            <Select
+              value={filtreRegion}
+              onValueChange={(v) => setFiltreRegion(v === ALL ? undefined : v)}
+            >
               <SelectTrigger className="h-9">
                 <SelectValue placeholder="Toutes les régions" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Toutes les régions</SelectItem>
-                {regions.map(region => (
-                  <SelectItem key={region.id} value={region.nom}>
-                    {region.nom}
-                  </SelectItem>
-                ))}
+                <SelectItem value={ALL}>Toutes les régions</SelectItem>
+                {regions
+                  .map(r => ({ label: String(r.nom ?? ''), value: String(r.nom ?? '') }))
+                  .filter(o => o.value.trim() !== '')
+                  .map(o => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
 
           <div>
-            <Select value={filtreSecteur} onValueChange={setFiltreSecteur}>
+            <Select
+              value={filtreSecteur}
+              onValueChange={(v) => setFiltreSecteur(v === ALL ? undefined : v)}
+            >
               <SelectTrigger className="h-9">
                 <SelectValue placeholder="Tous les secteurs" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tous les secteurs</SelectItem>
-                {secteurs.map(secteur => (
-                  <SelectItem key={secteur.id} value={secteur.nom}>
-                    {secteur.nom}
-                  </SelectItem>
-                ))}
+                <SelectItem value={ALL}>Tous les secteurs</SelectItem>
+                {secteurs
+                  .map(s => ({ label: String(s.nom ?? ''), value: String(s.nom ?? '') }))
+                  .filter(o => o.value.trim() !== '')
+                  .map(o => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
 
           <div>
-            <Select value={filtreRisque} onValueChange={setFiltreRisque}>
+            <Select
+              value={filtreRisque}
+              onValueChange={(v) => setFiltreRisque(v === ALL ? undefined : v)}
+            >
               <SelectTrigger className="h-9">
                 <SelectValue placeholder="Tous les risques" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tous les risques</SelectItem>
+                <SelectItem value={ALL}>Tous les risques</SelectItem>
                 <SelectItem value="Faible">Risque Faible</SelectItem>
                 <SelectItem value="Moyen">Risque Moyen</SelectItem>
                 <SelectItem value="Élevé">Risque Élevé</SelectItem>
@@ -125,10 +142,10 @@ const CarteRisque: React.FC<CarteRisqueProps> = ({ employeurs, className = '' })
           </div>
 
           <div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setShowLegend(!showLegend)}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowLegend((v) => !v)}
               className="w-full h-9"
             >
               <Layers className="h-4 w-4 mr-2" />
@@ -140,17 +157,12 @@ const CarteRisque: React.FC<CarteRisqueProps> = ({ employeurs, className = '' })
         {/* Carte */}
         <div className="relative">
           <div className="h-96 w-full rounded-lg overflow-hidden border">
-            <MapContainer
-              center={position}
-              zoom={8}
-              style={{ height: '100%', width: '100%' }}
-              className="z-0"
-            >
+            <MapContainer center={position} zoom={8} style={{ height: '100%', width: '100%' }} className="z-0">
               <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               />
-              
+
               {employeursFiltres.map((employeur) => (
                 <CircleMarker
                   key={employeur.id}
