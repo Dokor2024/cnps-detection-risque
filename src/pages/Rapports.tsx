@@ -20,6 +20,9 @@ const Rapports: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // valeur sentinelle pour Radix Select (évite value="")
+  const ALL = '__ALL__';
+
   const employeursRisqueEleve = employeurs.filter(e => e.scoreRisque >= 0.6);
   const concentrationAbidjan = employeurs.filter(e => e.region === 'Abidjan' && e.scoreRisque >= 0.6);
 
@@ -194,12 +197,15 @@ Cette analyse suggère une action coordonnée entre les services CNPS et fiscaux
 
               <div>
                 <label className="text-sm font-medium mb-2 block">Focus secteur (optionnel)</label>
-                <Select value={secteurFocus} onValueChange={setSecteurFocus}>
+                <Select
+                  value={secteurFocus}
+                  onValueChange={(v: string) => setSecteurFocus(v === ALL ? '' : v)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Tous les secteurs" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Tous les secteurs</SelectItem>
+                    <SelectItem value={ALL}>Tous les secteurs</SelectItem>
                     {secteurs.map(secteur => (
                       <SelectItem key={secteur.id} value={secteur.nom}>
                         {secteur.nom}
@@ -211,12 +217,15 @@ Cette analyse suggère une action coordonnée entre les services CNPS et fiscaux
 
               <div>
                 <label className="text-sm font-medium mb-2 block">Focus région (optionnel)</label>
-                <Select value={regionFocus} onValueChange={setRegionFocus}>
+                <Select
+                  value={regionFocus}
+                  onValueChange={(v: string) => setRegionFocus(v === ALL ? '' : v)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Toutes les régions" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Toutes les régions</SelectItem>
+                    <SelectItem value={ALL}>Toutes les régions</SelectItem>
                     {regions.map(region => (
                       <SelectItem key={region.id} value={region.nom}>
                         {region.nom}
