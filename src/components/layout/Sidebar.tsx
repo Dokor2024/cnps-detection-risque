@@ -8,7 +8,8 @@ import {
   Users,
   Settings,
   LogOut,
-  Shield
+  Shield,
+  GitMerge
 } from 'lucide-react';
 import {
   Sidebar,
@@ -45,6 +46,12 @@ const navigation = [
     url: '/carte',
     icon: Map,
     badge: null
+  },
+  {
+    title: 'Croisement',
+    url: '/croisement',
+    icon: GitMerge,
+    badge: 'Nouveau'
   },
   {
     title: 'Rapports',

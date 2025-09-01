@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import Recherche from "./pages/Recherche";
 import Carte from "./pages/Carte";
 import Rapports from "./pages/Rapports";
+import Croisement from "./pages/Croisement";
 import EmployeurDetail from "./pages/EmployeurDetail";
 import NotFound from "./pages/NotFound";
 import { authService } from "./services/authService";
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="recherche" element={<Recherche />} />
             <Route path="carte" element={<Carte />} />
             <Route path="rapports" element={<Rapports />} />
+            <Route path="croisement" element={<Croisement />} />
             <Route path="employeurs/:id" element={<EmployeurDetail />} />
           </Route>
           
