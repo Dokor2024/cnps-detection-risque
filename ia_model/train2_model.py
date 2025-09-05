@@ -25,6 +25,7 @@ Modèles:
   - KNN (pipeline: OneHot + StandardScaler, SMOTE si imblearn dispo)
   - RandomForest (class_weight='balanced_subsample')
   - Gradient Boosting (LightGBM/XGBoost/CatBoost si installés, sinon sklearn.GradientBoosting)
+  - **Stacking (KNN + RF + GBM → méta LogisticRegression)**
 
 Métriques:
   - Accuracy, Precision (pos=1), Recall (pos=1), F1 (pos=1), ROC AUC
@@ -51,7 +52,7 @@ import numpy as np
 import pandas as pd
 
 # sklearn / imblearn
-from sklearn.model_selection import train_test_split, StratifiedKFold, RandomizedSearchCV
+from sklearn.model_selection import train_test_split, StratifiedKFold, RandomizedSearchCV, GridSearchCV
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
@@ -60,7 +61,8 @@ from sklearn.metrics import (
     RocCurveDisplay, ConfusionMatrixDisplay
 )
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, StackingClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.utils.class_weight import compute_sample_weight
 from sklearn.impute import SimpleImputer
 import inspect
@@ -464,6 +466,91 @@ def fit_gb(X_train, y_train, preprocessor, random_state: int):
     logger.info("[GB(sklearn)] Best params: %s", search.best_params_)
     return search.best_estimator_
 
+# ----------------------------- Stacking --------------------------------------
+def fit_stacking(X_train, y_train, preprocessor, random_state: int):
+    """
+    StackingClassifier:
+      - Base learners: KNN + RandomForest + GBM (LightGBM > XGB > CatBoost > GB sklearn)
+      - Méta-apprenant: LogisticRegression (class_weight='balanced')
+      - Tuning rapide du C du méta.
+    On place le Stacking à l'intérieur d'une Pipeline avec le même préprocesseur
+    'for_knn=True' (scaling + OHE sparse) pour compat KNN.
+    """
+    # ---- base learners (hyperparams "sensés", robustes) ----
+    knn = KNeighborsClassifier(
+        n_neighbors=26, weights="distance", p=1, algorithm="brute", leaf_size=59
+    )
+
+    rf = RandomForestClassifier(
+        n_estimators=450, max_depth=19, max_features="log2",
+        min_samples_split=17, min_samples_leaf=1, bootstrap=False,
+        class_weight="balanced_subsample", n_jobs=-1, random_state=random_state
+    )
+
+    pos_w = compute_pos_weight(y_train)
+
+    if HAS_LGBM:
+        gb = lgb.LGBMClassifier(
+            objective="binary",
+            n_estimators=800, learning_rate=0.05, max_depth=-1,
+            subsample=0.8, colsample_bytree=0.8, num_leaves=63,
+            min_child_samples=20, reg_alpha=0.05, reg_lambda=0.05,
+            scale_pos_weight=pos_w, n_jobs=-1, random_state=random_state
+        )
+        gb_name = "lgbm"
+    elif HAS_XGB:
+        gb = XGBClassifier(
+            objective="binary:logistic", n_estimators=800, learning_rate=0.05,
+            max_depth=8, subsample=0.8, colsample_bytree=0.8, min_child_weight=1.0,
+            gamma=0.0, reg_alpha=0.01, reg_lambda=0.05, tree_method="hist",
+            eval_metric="auc", n_jobs=-1, random_state=random_state,
+            scale_pos_weight=pos_w
+        )
+        gb_name = "xgb"
+    elif HAS_CAT:
+        gb = CatBoostClassifier(
+            loss_function="Logloss", iterations=800, learning_rate=0.05, depth=7,
+            l2_leaf_reg=3.0, random_state=random_state, verbose=False,
+            scale_pos_weight=pos_w
+        )
+        gb_name = "cat"
+    else:
+        gb = GradientBoostingClassifier(
+            n_estimators=400, learning_rate=0.05, max_depth=3, random_state=random_state
+        )
+        gb_name = "gb_sklearn"
+
+    estimators = [("knn", knn), ("rf", rf), (gb_name, gb)]
+
+    meta = LogisticRegression(
+        penalty="l2", C=1.0, max_iter=1000, class_weight="balanced", solver="lbfgs"
+    )
+
+    stack = StackingClassifier(
+        estimators=estimators,
+        final_estimator=meta,
+        stack_method="predict_proba",
+        passthrough=False,
+        n_jobs=-1
+    )
+
+    pipe = Pipeline([("pre", preprocessor), ("clf", stack)])
+
+    # Tuning léger du méta (C)
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state)
+    grid = GridSearchCV(
+        pipe,
+        param_grid={"clf__final_estimator__C": [0.5, 1.0, 2.0]},
+        scoring="f1",
+        cv=cv,
+        n_jobs=-1,
+        refit=True,
+        verbose=0
+    )
+    grid.fit(X_train, y_train)
+    logger.info("[STACKING] Best params: %s", grid.best_params_)
+    return grid.best_estimator_
+
 # --------------------------------- Main --------------------------------------
 def main():
     parser = argparse.ArgumentParser()
@@ -526,6 +613,15 @@ def main():
         results.append({"model": gb_name, **gb_metrics})
     except Exception as e:
         logger.exception("Erreur Gradient Boosting: %s", e)
+
+    # --- Stacking (KNN + RF + GBM) ---
+    try:
+        stacking_est = fit_stacking(X_train, y_train, preprocessor=pre_knn, random_state=args.random_state)
+        stacking_metrics = evaluate_and_save("stacking", stacking_est, X_test, y_test, args.outdir)
+        joblib.dump(stacking_est, os.path.join(args.outdir, "stacking.joblib"))
+        results.append({"model": "stacking", **stacking_metrics})
+    except Exception as e:
+        logger.exception("Erreur Stacking: %s", e)
 
     # 6) Récapitulatif
     if results:

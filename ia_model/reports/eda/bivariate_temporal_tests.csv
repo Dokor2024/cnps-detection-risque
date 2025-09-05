@@ -1,0 +1,2 @@
+feature,test,stat,pvalue,mean_0,mean_1,n0,n1
+anciennete_mois,mannwhitneyu,2102480.5,0.0767871454825732,103.84891574831141,98.7069799585349,2813,1447

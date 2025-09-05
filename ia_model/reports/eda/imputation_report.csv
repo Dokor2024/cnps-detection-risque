@@ -1,0 +1,12 @@
+variable,type,strategy,param,missing_before,missing_after
+mois_non_declares,numeric,median,0.0,289,0
+solde,numeric,median,80176.0,265,0
+mois_payes_spontane_dern_seg,numeric,median,2.0,96,0
+anciennete_mois,numeric,median,50.0,42,0
+recence_decl_mois,numeric,all_nan->0.0,0.0,4302,0
+recence_seg_mois,numeric,all_nan->0.0,0.0,4302,0
+ecart_mois_decl_vs_seg,numeric,all_nan->0.0,0.0,4302,0
+regime,categorical,fill='INCONNU',INCONNU,0,0
+centre_impot,categorical,fill='INCONNU',INCONNU,0,0
+segment,categorical,fill='INCONNU',INCONNU,0,0
+activite,categorical,fill='INCONNU',INCONNU,0,0
