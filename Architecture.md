@@ -7,16 +7,16 @@ Cette plateforme nécessite une architecture backend robuste et scalable pour g�
 ## Stack Technologique Recommandée
 
 ### Backend Core
-- **Node.js** avec **Express.js** ou **Fastify** (API REST)
-- **TypeScript** pour la type safety
+- **python** avec **Django** ou **Fastapi** (API REST)
+- **python** pour la type safety
 - **PostgreSQL** comme base de données principale
 - **Redis** pour le cache et les sessions
 - **JWT** pour l'authentification
 
 ### Microservices Optionnels
 - **API Gateway** (Kong, AWS API Gateway, ou NGINX)
-- **Message Broker** (RabbitMQ ou Apache Kafka) pour les tâches asynchrones
-- **Elasticsearch** pour la recherche avancée et analytics
+- **Message Broker** (RabbitMQ ou Apache Kafka) pour les tâches asynchrones on verra
+- **Elasticsearch** pour la recherche avancée et analytics on verra
 
 ### Infrastructure
 - **Docker** + **Docker Compose** pour le développement
@@ -611,7 +611,7 @@ class AuthService {
 }
 ```
 
-### 2. Service de Calcul de Risque
+### 2. Service de Calcul de Risque   a implementer en python 
 
 ```typescript
 class RiskCalculationService {
