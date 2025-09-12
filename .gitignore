@@ -22,3 +22,71 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.so
+*.dll
+
+# --- Environnements ---
+.venv/
+venv/
+env/
+ENV/
+*.env
+*.env.*
+
+# --- Django / bases locales ---
+db.sqlite3
+*.sqlite3
+media/
+staticfiles/
+local_settings.py
+
+# --- Migrations compilées ---
+*/migrations/__pycache__/
+*/migrations/*.pyc
+
+# --- Logs & debug ---
+*.log
+*.pot
+*.pyproj
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+
+# --- Outils ---
+.idea/
+.vscode/
+*.code-workspace
+
+# --- Build / distribution ---
+build/
+dist/
+*.egg-info/
+.eggs/
+*.manifest
+*.spec
+
+# --- Tests ---
+.coverage
+.coverage.*
+.tox/
+.nox/
+.pytest_cache/
+htmlcov/
+
+# --- Node / frontend éventuel ---
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# --- Docker ---
+*.pid
+*.seed
+*.bak
